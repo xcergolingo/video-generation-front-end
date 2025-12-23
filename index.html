@@ -1,1 +1,811 @@
-hello world!
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Word Video Generator</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel-2: rgba(255, 255, 255, 0.09);
+        --stroke: rgba(255, 255, 255, 0.12);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.72);
+        --muted-2: rgba(255, 255, 255, 0.58);
+        --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+        --radius: 16px;
+        --radius-sm: 12px;
+        --focus: 0 0 0 4px rgba(124, 92, 255, 0.35);
+        --accent: #7c5cff;
+        --accent-2: #19c37d;
+        --danger: #ff4d4d;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f5f7ff;
+          --panel: rgba(255, 255, 255, 0.85);
+          --panel-2: rgba(255, 255, 255, 0.95);
+          --stroke: rgba(0, 0, 0, 0.08);
+          --text: rgba(15, 23, 42, 0.92);
+          --muted: rgba(15, 23, 42, 0.72);
+          --muted-2: rgba(15, 23, 42, 0.6);
+          --shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          "Apple Color Emoji",
+          "Segoe UI Emoji";
+        color: var(--text);
+        background:
+          radial-gradient(1200px 700px at 15% -10%, rgba(124, 92, 255, 0.45), transparent 55%),
+          radial-gradient(900px 600px at 90% 0%, rgba(25, 195, 125, 0.22), transparent 50%),
+          radial-gradient(1000px 900px at 50% 110%, rgba(124, 92, 255, 0.18), transparent 60%),
+          var(--bg);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 18px 16px 28px;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
+        border-bottom: 1px solid var(--stroke);
+      }
+
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        max-width: 980px;
+        margin: 0 auto;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background:
+          radial-gradient(12px 12px at 30% 30%, rgba(255, 255, 255, 0.55), transparent 60%),
+          linear-gradient(135deg, rgba(124, 92, 255, 1), rgba(25, 195, 125, 1));
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+        border: 1px solid color-mix(in srgb, var(--stroke) 55%, transparent);
+      }
+
+      .brand h1 {
+        font-size: 14px;
+        margin: 0;
+        letter-spacing: 0.2px;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .brand p {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tabs {
+        display: inline-flex;
+        gap: 6px;
+        padding: 6px;
+        border: 1px solid var(--stroke);
+        border-radius: 999px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .tab {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        padding: 10px 12px;
+        border-radius: 999px;
+        font-weight: 650;
+        font-size: 13px;
+        cursor: pointer;
+        min-width: 132px;
+      }
+
+      .tab[aria-selected="true"] {
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--stroke);
+      }
+
+      .tab:focus-visible {
+        outline: none;
+        box-shadow: var(--focus);
+      }
+
+      main {
+        padding-top: 16px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 10px;
+        padding: 18px 18px 0;
+      }
+
+      .hero h2 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.2px;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        max-width: 70ch;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .grid.single {
+        grid-template-columns: 1fr;
+      }
+
+      @media (max-width: 860px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tab {
+          min-width: 0;
+          padding: 10px 10px;
+        }
+      }
+
+      .card {
+        border: 1px solid var(--stroke);
+        background: var(--panel);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--stroke);
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .card-header h3 {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+      }
+
+      .card-header .hint {
+        margin: 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .card-body {
+        padding: 16px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .row.two {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      @media (max-width: 520px) {
+        .row.two {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 12px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--stroke);
+        background: color-mix(in srgb, var(--panel-2) 80%, transparent);
+        color: var(--text);
+        font-size: 14px;
+        outline: none;
+      }
+
+      input::placeholder {
+        color: color-mix(in srgb, var(--muted-2) 90%, transparent);
+      }
+
+      input:focus,
+      select:focus {
+        box-shadow: var(--focus);
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--stroke));
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 4px;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--stroke);
+        background: var(--panel-2);
+        color: var(--text);
+        font-weight: 700;
+        font-size: 14px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 44px;
+      }
+
+      .btn.primary {
+        border-color: color-mix(in srgb, var(--accent) 40%, var(--stroke));
+        background: linear-gradient(135deg, rgba(124, 92, 255, 0.95), rgba(124, 92, 255, 0.7));
+      }
+
+      .btn.ghost {
+        background: transparent;
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus);
+      }
+
+      .status {
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--stroke);
+        background: color-mix(in srgb, var(--panel-2) 72%, transparent);
+      }
+
+      .status .k {
+        display: inline-block;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .status .v {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--stroke);
+        background: color-mix(in srgb, var(--panel-2) 80%, transparent);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 0 5px rgba(124, 92, 255, 0.15);
+      }
+
+      .dot.ok {
+        background: var(--accent-2);
+        box-shadow: 0 0 0 5px rgba(25, 195, 125, 0.16);
+      }
+
+      .dot.bad {
+        background: var(--danger);
+        box-shadow: 0 0 0 5px rgba(255, 77, 77, 0.14);
+      }
+
+      .list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .item {
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--panel-2) 76%, transparent);
+        overflow: hidden;
+      }
+
+      .item-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 12px 10px;
+      }
+
+      .item-top strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .item-top small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        word-break: break-word;
+      }
+
+      .item-actions {
+        display: inline-flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .btn.sm {
+        font-size: 12px;
+        padding: 9px 10px;
+        min-height: 38px;
+        border-radius: 10px;
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        max-height: 420px;
+        background: rgba(0, 0, 0, 0.18);
+        border-top: 1px solid var(--stroke);
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      footer {
+        padding: 14px 16px 22px;
+        color: var(--muted-2);
+        font-size: 12px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <div class="brand" aria-label="Site title">
+          <div class="logo" aria-hidden="true"></div>
+          <div style="min-width: 0">
+            <h1>Word Video Generator</h1>
+            <p>Type a word, pick a language, generate a short video.</p>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Main navigation">
+          <button class="tab" role="tab" id="tab-generate" aria-controls="panel-generate" aria-selected="true" type="button">
+            Video Generation
+          </button>
+          <button class="tab" role="tab" id="tab-recent" aria-controls="panel-recent" aria-selected="false" type="button">
+            Recent Results
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <main>
+        <section id="panel-generate" role="tabpanel" aria-labelledby="tab-generate">
+          <div class="hero">
+            <h2>Generate a video from a single word</h2>
+            <p>Submit a word and language. Your request is queued and may take a few minutes to appear in Recent Results.</p>
+          </div>
+
+          <div class="grid single">
+            <div class="card">
+              <div class="card-header">
+                <h3>Video generation</h3>
+              </div>
+              <div class="card-body">
+                <form id="generate-form">
+                  <div class="row two">
+                    <div>
+                      <label for="word">Word</label>
+                      <input
+                        id="word"
+                        name="word"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="off"
+                        autocapitalize="none"
+                        maxlength="64"
+                        placeholder="e.g., apple"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label for="language">Language</label>
+                      <select id="language" name="language" required>
+                        <option value="English">English</option>
+                        <option value="Vietnamese">Vietnamese</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="Chinese">Chinese</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="French">French</option>
+                        <option value="Russian">Russian</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="German">German</option>
+                        <option value="Korean">Korean</option>
+                        <option value="Italian">Italian</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="actions">
+                    <button id="generate-btn" class="btn primary" type="submit">Generate video</button>
+                    <span id="generate-pill" class="pill" aria-live="polite">
+                      <span id="generate-dot" class="dot" aria-hidden="true"></span>
+                      <span id="generate-pill-text">Ready</span>
+                    </span>
+                  </div>
+                </form>
+
+                <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--stroke)">
+                  <div class="row">
+                    <div class="status">
+                      <div class="k">Result</div>
+                      <div id="generate-result" class="v">Submit a word to begin.</div>
+                    </div>
+                    <div class="status">
+                      <div class="k">Operation ID</div>
+                      <div id="generate-operation" class="v">—</div>
+                    </div>
+                    <div class="status">
+                      <div class="k">Word • Language</div>
+                      <div id="generate-meta" class="v">—</div>
+                    </div>
+                    <div class="muted">
+                      Tip: switch to Recent Results and tap Refresh to see newly generated videos once they finish.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-recent" role="tabpanel" aria-labelledby="tab-recent" hidden>
+          <div class="hero">
+            <h2>Recent results</h2>
+            <p>Fetch the most recently generated videos. Tap any embedded video to play.</p>
+          </div>
+
+          <div class="grid single">
+            <div class="card">
+              <div class="card-header">
+                <h3>Recent videos</h3>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="actions">
+                    <button id="refresh-btn" class="btn primary" type="button">Refresh</button>
+                    <span id="recent-pill" class="pill" aria-live="polite">
+                      <span id="recent-dot" class="dot" aria-hidden="true"></span>
+                      <span id="recent-pill-text">Not loaded</span>
+                    </span>
+                  </div>
+
+                  <div id="recent-list" class="list" aria-live="polite"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer>© Word Video Generator</footer>
+
+    <script>
+      const API_BASE = "https://ln686uub5b.execute-api.us-east-1.amazonaws.com/prod/video-generation";
+      const VIDEO_PREFIX = "https://d1vly1vxrll6os.cloudfront.net/";
+
+      const $ = (id) => document.getElementById(id);
+
+      const tabs = [
+        { tab: $("tab-generate"), panel: $("panel-generate"), hash: "#generate" },
+        { tab: $("tab-recent"), panel: $("panel-recent"), hash: "#recent" },
+      ];
+
+      function setPill(prefix, state, text) {
+        const dot = $(prefix + "-dot");
+        const label = $(prefix + "-pill-text");
+        label.textContent = text;
+        dot.classList.remove("ok", "bad");
+        if (state === "ok") dot.classList.add("ok");
+        if (state === "bad") dot.classList.add("bad");
+      }
+
+      function setActiveTab(hash) {
+        const active = hash === "#recent" ? "recent" : "generate";
+        for (const t of tabs) {
+          const isActive = t.hash === "#" + active;
+          t.tab.setAttribute("aria-selected", String(isActive));
+          t.panel.hidden = !isActive;
+        }
+        if (active === "recent") refreshRecent({ silentIfLoaded: true });
+      }
+
+      for (const t of tabs) {
+        t.tab.addEventListener("click", () => {
+          history.replaceState(null, "", t.hash);
+          setActiveTab(t.hash);
+          t.tab.focus();
+        });
+      }
+
+      window.addEventListener("hashchange", () => setActiveTab(location.hash));
+      setActiveTab(location.hash);
+
+      const generateForm = $("generate-form");
+      const generateBtn = $("generate-btn");
+      const wordInput = $("word");
+      const languageSelect = $("language");
+
+      function normalizePrefix(prefix) {
+        const value = (prefix || "").trim();
+        if (!value) return "";
+        return value.endsWith("/") ? value : value + "/";
+      }
+
+      function safeJsonStringify(value) {
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return String(value);
+        }
+      }
+
+      async function postJson(url, body) {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: body ? JSON.stringify(body) : "{}",
+        });
+        const text = await res.text();
+        let json = null;
+        try {
+          json = text ? JSON.parse(text) : null;
+        } catch {
+          json = { raw: text };
+        }
+        if (!res.ok) {
+          const message = (json && (json.message || json.error)) ? (json.message || json.error) : `HTTP ${res.status}`;
+          const err = new Error(message);
+          err.status = res.status;
+          err.body = json;
+          throw err;
+        }
+        return json;
+      }
+
+      generateForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const word = wordInput.value.trim();
+        const language = languageSelect.value;
+        if (!word) {
+          wordInput.focus();
+          return;
+        }
+
+        setPill("generate", "", "Sending…");
+        generateBtn.disabled = true;
+        $("generate-result").textContent = "Submitting request…";
+        $("generate-operation").textContent = "—";
+        $("generate-meta").textContent = `${word} • ${language}`;
+
+        try {
+          const data = await postJson(`${API_BASE}/generate`, { word, language });
+          $("generate-result").textContent = data?.status ? String(data.status) : "OK";
+          $("generate-operation").textContent = data?.operation_id ? String(data.operation_id) : "—";
+          setPill("generate", "ok", "Queued");
+        } catch (err) {
+          const details = err?.body ? ` (${safeJsonStringify(err.body)})` : "";
+          $("generate-result").textContent = `Error: ${err.message}${details}`;
+          $("generate-operation").textContent = "—";
+          setPill("generate", "bad", "Error");
+        } finally {
+          generateBtn.disabled = false;
+        }
+      });
+
+      const refreshBtn = $("refresh-btn");
+      let lastRecentVideos = null;
+      let recentLoadedOnce = false;
+
+      function buildVideoUrl(s3Key) {
+        if (!s3Key) return "";
+        return normalizePrefix(VIDEO_PREFIX) + s3Key;
+      }
+
+      function renderRecentList(videos) {
+        const list = $("recent-list");
+        list.innerHTML = "";
+
+        if (!videos) return;
+        if (!Array.isArray(videos) || videos.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "muted";
+          empty.textContent = "No recent videos returned.";
+          list.appendChild(empty);
+          return;
+        }
+
+        for (const v of videos) {
+          const word = v?.word ?? "";
+          const s3Key = v?.s3_key ?? "";
+          const url = s3Key ? buildVideoUrl(s3Key) : "";
+
+          const item = document.createElement("div");
+          item.className = "item";
+
+          const top = document.createElement("div");
+          top.className = "item-top";
+
+          const left = document.createElement("div");
+          const strong = document.createElement("strong");
+          strong.textContent = word ? String(word) : "(unknown word)";
+          left.appendChild(strong);
+
+          top.appendChild(left);
+          item.appendChild(top);
+
+          if (url) {
+            const video = document.createElement("video");
+            video.controls = true;
+            video.preload = "metadata";
+            video.src = url;
+            item.appendChild(video);
+          } else {
+            const note = document.createElement("div");
+            note.className = "muted";
+            note.style.padding = "0 12px 12px";
+            note.textContent = "Missing s3_key for this item.";
+            item.appendChild(note);
+          }
+
+          list.appendChild(item);
+        }
+      }
+
+      async function refreshRecent({ silentIfLoaded } = {}) {
+        if (silentIfLoaded && recentLoadedOnce) return;
+
+        setPill("recent", "", "Loading…");
+        refreshBtn.disabled = true;
+        try {
+          const data = await postJson(`${API_BASE}/recent`, null);
+          lastRecentVideos = data?.videos ?? [];
+          renderRecentList(lastRecentVideos);
+          recentLoadedOnce = true;
+          setPill("recent", "ok", "Loaded");
+        } catch (err) {
+          const list = $("recent-list");
+          list.innerHTML = "";
+          const msg = document.createElement("div");
+          msg.className = "muted";
+          msg.textContent = `Error: ${err.message}`;
+          list.appendChild(msg);
+          setPill("recent", "bad", "Error");
+        } finally {
+          refreshBtn.disabled = false;
+        }
+      }
+
+      refreshBtn.addEventListener("click", () => refreshRecent());
+    </script>
+  </body>
+</html>
