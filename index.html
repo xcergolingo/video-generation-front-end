@@ -488,6 +488,9 @@
           <button class="tab" role="tab" id="tab-recent" aria-controls="panel-recent" aria-selected="false" type="button">
             Recent Results
           </button>
+          <button class="tab" role="tab" id="tab-google" aria-controls="panel-google" aria-selected="false" type="button">
+            Google Login
+          </button>
         </div>
       </div>
     </header>
@@ -601,6 +604,46 @@
             </div>
           </div>
         </section>
+
+        <section id="panel-google" role="tabpanel" aria-labelledby="tab-google" hidden>
+          <div class="hero">
+            <h2>Google login</h2>
+            <p>Sign in with Google to store an authorization token via the backend callback flow.</p>
+          </div>
+
+          <div class="grid single">
+            <div class="card">
+              <div class="card-header">
+                <h3>Authentication</h3>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="actions">
+                    <button id="google-login-btn" class="btn primary" type="button">Sign in with Google</button>
+                    <button id="google-refresh-btn" class="btn" type="button">Check status</button>
+                    <span id="google-pill" class="pill" aria-live="polite">
+                      <span id="google-dot" class="dot" aria-hidden="true"></span>
+                      <span id="google-pill-text">Not checked</span>
+                    </span>
+                  </div>
+
+                  <div class="status">
+                    <div class="k">User ID</div>
+                    <div id="google-user-id" class="v">—</div>
+                  </div>
+                  <div class="status">
+                    <div class="k">Client URL</div>
+                    <div id="google-client-url" class="v">—</div>
+                  </div>
+                  <div class="status">
+                    <div class="k">Result</div>
+                    <div id="google-result" class="v">Click “Sign in with Google” to begin.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -610,11 +653,20 @@
       const API_BASE = "https://ln686uub5b.execute-api.us-east-1.amazonaws.com/prod/video-generation";
       const VIDEO_PREFIX = "https://d1vly1vxrll6os.cloudfront.net/";
 
+      const GOOGLE_USER_ID = "video-gen-admin";
+      const GOOGLE_OAUTH_CLIENT_ID = "364162722608-thvnubqhtg68f1uhvf7gm5cqia8fhnbs.apps.googleusercontent.com";
+      const GOOGLE_API_GATEWAY_CALLBACK_URL =
+        "https://806d425v42.execute-api.us-east-1.amazonaws.com/prod/youtube-user-consent-callback";
+      const GOOGLE_AUTH_STATUS_ENDPOINT =
+        "https://806d425v42.execute-api.us-east-1.amazonaws.com/prod/youtube-check-if-got-auth-token";
+      const GOOGLE_OAUTH_SCOPE = "https://www.googleapis.com/auth/youtube.upload";
+
       const $ = (id) => document.getElementById(id);
 
       const tabs = [
         { tab: $("tab-generate"), panel: $("panel-generate"), hash: "#generate" },
         { tab: $("tab-recent"), panel: $("panel-recent"), hash: "#recent" },
+        { tab: $("tab-google"), panel: $("panel-google"), hash: "#google" },
       ];
 
       function setPill(prefix, state, text) {
@@ -627,13 +679,14 @@
       }
 
       function setActiveTab(hash) {
-        const active = hash === "#recent" ? "recent" : "generate";
+        const activeHash = tabs.some((t) => t.hash === hash) ? hash : "#generate";
         for (const t of tabs) {
-          const isActive = t.hash === "#" + active;
+          const isActive = t.hash === activeHash;
           t.tab.setAttribute("aria-selected", String(isActive));
           t.panel.hidden = !isActive;
         }
-        if (active === "recent") refreshRecent({ silentIfLoaded: true });
+        if (activeHash === "#recent") refreshRecent({ silentIfLoaded: true });
+        if (activeHash === "#google") checkGoogleAuthStatus({ silentIfLoaded: true });
       }
 
       for (const t of tabs) {
@@ -644,13 +697,13 @@
         });
       }
 
-      window.addEventListener("hashchange", () => setActiveTab(location.hash));
-      setActiveTab(location.hash);
-
       const generateForm = $("generate-form");
       const generateBtn = $("generate-btn");
       const wordInput = $("word");
       const languageSelect = $("language");
+
+      const googleLoginBtn = $("google-login-btn");
+      const googleRefreshBtn = $("google-refresh-btn");
 
       function normalizePrefix(prefix) {
         const value = (prefix || "").trim();
@@ -725,6 +778,7 @@
       const refreshBtn = $("refresh-btn");
       let lastRecentVideos = null;
       let recentLoadedOnce = false;
+      let googleAuthCheckedOnce = false;
 
       function buildVideoUrl(s3Key) {
         if (!s3Key) return "";
@@ -806,6 +860,81 @@
       }
 
       refreshBtn.addEventListener("click", () => refreshRecent());
+
+      function isLocal() {
+        const host = window.location.hostname;
+        return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
+      }
+
+      function getGoogleClientUrl() {
+        const base = isLocal() ? "http://localhost:8000" : window.location.origin;
+        return `${base}${window.location.pathname}#google`;
+      }
+
+      function safeBase64Encode(str) {
+        try {
+          return btoa(str);
+        } catch {
+          return btoa(unescape(encodeURIComponent(str)));
+        }
+      }
+
+      function buildGoogleOAuthUrl() {
+        const stateObject = {
+          user_id: GOOGLE_USER_ID,
+          client_url: getGoogleClientUrl(),
+        };
+        const state = safeBase64Encode(JSON.stringify(stateObject));
+        const params = {
+          response_type: "code",
+          client_id: GOOGLE_OAUTH_CLIENT_ID,
+          redirect_uri: GOOGLE_API_GATEWAY_CALLBACK_URL,
+          scope: GOOGLE_OAUTH_SCOPE,
+          access_type: "offline",
+          prompt: "consent",
+          state,
+        };
+        const queryString = Object.keys(params)
+          .map((key) => key + "=" + encodeURIComponent(params[key]))
+          .join("&");
+        return "https://accounts.google.com/o/oauth2/v2/auth?" + queryString;
+      }
+
+      function startGoogleLogin() {
+        $("google-result").textContent = "Redirecting to Google…";
+        setPill("google", "", "Redirecting…");
+        window.location.href = buildGoogleOAuthUrl();
+      }
+
+      async function checkGoogleAuthStatus({ silentIfLoaded } = {}) {
+        if (silentIfLoaded && googleAuthCheckedOnce) return;
+        googleAuthCheckedOnce = true;
+
+        $("google-user-id").textContent = GOOGLE_USER_ID;
+        $("google-client-url").textContent = getGoogleClientUrl();
+        setPill("google", "", "Checking…");
+        googleRefreshBtn.disabled = true;
+
+        try {
+          const url = `${GOOGLE_AUTH_STATUS_ENDPOINT}?user_id=${encodeURIComponent(GOOGLE_USER_ID)}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const isAuthed = data === true;
+          $("google-result").textContent = isAuthed ? "Authenticated (token is stored in backend)." : "Not authenticated yet.";
+          setPill("google", isAuthed ? "ok" : "", isAuthed ? "Authenticated" : "Not authenticated");
+        } catch (err) {
+          $("google-result").textContent = `Error checking auth status: ${err?.message || String(err)}`;
+          setPill("google", "bad", "Error");
+        } finally {
+          googleRefreshBtn.disabled = false;
+        }
+      }
+
+      googleLoginBtn.addEventListener("click", startGoogleLogin);
+      googleRefreshBtn.addEventListener("click", () => checkGoogleAuthStatus());
+
+      window.addEventListener("hashchange", () => setActiveTab(location.hash));
+      setActiveTab(location.hash);
     </script>
   </body>
 </html>
